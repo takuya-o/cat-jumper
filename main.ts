@@ -6,8 +6,28 @@ namespace SpriteKind {
     export const Terrain = SpriteKind.create()
     export const spikes = SpriteKind.create()
 }
+sprites.onOverlap(SpriteKind.Player, SpriteKind.spikes, function (sprite, otherSprite) {
+    cat.vy = -100
+    info.changeLifeBy(-1)
+})
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Trap, function (sprite, otherSprite) {
     take_damage()
+})
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Coin, function (sprite, otherSprite) {
+    animation.runMovementAnimation(
+    otherSprite,
+    animation.animationPresets(animation.easeUp),
+    1000,
+    false
+    )
+    info.changeScoreBy(1)
+    pause(500)
+    otherSprite.destroy()
+})
+controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
+    if (cat.vy == 0) {
+        launch()
+    }
 })
 function launch () {
     if (7 < charge) {
@@ -18,49 +38,61 @@ function launch () {
         cat.vy = -150
     }
 }
+// プレイヤー(ネコ)がでぐちについたら
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Portal, function (sprite, otherSprite) {
+    // レベルに1をたす
+    current_level += 1
+    if (current_level == levels.length) {
+        // マップのはいれつ
+        // おわったらゴール
+        game.over(true)
+    }
+    start_level()
+})
 function stop () {
     cat.vx = 0
 }
-scene.onHitTile(SpriteKind.Player, 0, function (sprite) {
-    if (sprite.isHittingTile(CollisionDirection.Bottom)) {
-        take_damage()
-    }
-})
-controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (cat.vy == 0) {
-        launch()
-    }
-})
-sprites.onOverlap(SpriteKind.Player, SpriteKind.spikes, function (sprite, otherSprite) {
-    cat.vy = -100
-    info.changeLifeBy(-1)
-})
+// ダメージをうけた
+// ライフを1へらして
+// ネコをスタートいちにもどす
 function take_damage () {
     info.changeLifeBy(-1)
     if (0 < info.life()) {
         scene.placeOnRandomTile(cat, 3)
     }
 }
-sprites.onOverlap(SpriteKind.Player, SpriteKind.Portal, function (sprite, otherSprite) {
-    current_level += 1
-    if (current_level == levels.length) {
-        game.over(true)
+scene.onHitTile(SpriteKind.Player, 0, function (sprite) {
+    if (sprite.isHittingTile(CollisionDirection.Bottom)) {
+        take_damage()
     }
-    start_level()
 })
-sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
-    if (sprite.bottom < otherSprite.bottom) {
-        info.changeScoreBy(2)
-    } else {
-        info.changeLifeBy(-1)
-    }
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Flower, function (sprite, otherSprite) {
     otherSprite.destroy()
+    bee = sprites.create(img`
+. . f . f f . . 
+. f 1 f 1 1 f . 
+. . . f f f . . 
+. . f 5 f 5 f . 
+. f 5 f 5 f 5 f 
+. f 5 f 5 5 5 f 
+. . f 5 f 5 f . 
+. . . f f f . . 
+`, SpriteKind.Enemy)
+    bee_x = scene.screenWidth() / 2 + sprite.x
+    bee_y = Math.max(0, sprite.y - scene.screenHeight() / 2)
+    bee.setPosition(bee_x, bee_y)
+    animation.runImageAnimation(
+    bee,
+    bee_images,
+    50,
+    true
+    )
+    bee.follow(cat)
 })
-sprites.onOverlap(SpriteKind.Player, SpriteKind.Terrain, function (sprite, otherSprite) {
-    x_diff = 0 - sprite.vx / 40
-    sprite.x += x_diff
-})
+// あたらしいレベルのすたーと
 function start_level () {
+    // いまのレベルが4より小さいときのせいたいけいは、0 = つち
+    // 大きければ、せいたいけいは1 = うみ
     if (current_level < 4) {
         biome = 0
     } else {
@@ -480,39 +512,9 @@ e e e e e e e e e e e e e e e e
 function jump () {
     cat.vy = -150
 }
-sprites.onOverlap(SpriteKind.Player, SpriteKind.Coin, function (sprite, otherSprite) {
-    animation.runMovementAnimation(
-    otherSprite,
-    animation.animationPresets(animation.easeUp),
-    1000,
-    false
-    )
-    info.changeScoreBy(1)
-    pause(500)
-    otherSprite.destroy()
-})
-sprites.onOverlap(SpriteKind.Player, SpriteKind.Flower, function (sprite, otherSprite) {
-    otherSprite.destroy()
-    bee = sprites.create(img`
-. . f . f f . . 
-. f 1 f 1 1 f . 
-. . . f f f . . 
-. . f 5 f 5 f . 
-. f 5 f 5 f 5 f 
-. f 5 f 5 5 5 f 
-. . f 5 f 5 f . 
-. . . f f f . . 
-`, SpriteKind.Enemy)
-    bee_x = scene.screenWidth() / 2 + sprite.x
-    bee_y = Math.max(0, sprite.y - scene.screenHeight() / 2)
-    bee.setPosition(bee_x, bee_y)
-    animation.runImageAnimation(
-    bee,
-    bee_images,
-    50,
-    true
-    )
-    bee.follow(cat)
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Terrain, function (sprite, otherSprite) {
+    x_diff = 0 - sprite.vx / 40
+    sprite.x += x_diff
 })
 function set_biome () {
     if (biome == 0) {
@@ -981,13 +983,18 @@ f 2 2 f 2 f f .
 `]
     }
 }
+sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
+    if (sprite.bottom < otherSprite.bottom) {
+        info.changeScoreBy(2)
+    } else {
+        info.changeLifeBy(-1)
+    }
+    otherSprite.destroy()
+})
 function go () {
     cat.vx = 80
 }
-let bee_images: Image[] = []
-let bee_y = 0
-let bee_x = 0
-let bee: Sprite = null
+let x_diff = 0
 let spikes2: Sprite = null
 let squeeze_grass: Sprite = null
 let fireball: Sprite = null
@@ -996,7 +1003,10 @@ let bee_flower: Sprite = null
 let coin: Sprite = null
 let exit_portal: Sprite = null
 let biome = 0
-let x_diff = 0
+let bee_images: Image[] = []
+let bee_y = 0
+let bee_x = 0
+let bee: Sprite = null
 let x_speed = 0
 let charge = 0
 let current_level = 0
@@ -1020,6 +1030,7 @@ f f f f f f f f f f f f f f . .
 . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . 
 `, SpriteKind.Player)
+// マップのはいれつ
 levels = [img`
 . . . . . . . . . . . . . . . . . 4 4 4 4 5 5 5 5 . . . . . . . 
 3 . . . . . . . . . . . . . . . . . . 7 7 7 7 7 7 . . . . . . . 
@@ -1114,24 +1125,16 @@ levels = [img`
 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
 `]
+// いまのレベル
 current_level = 0
+// ネコのかそくどY
+// いつもおちようとしている
 cat.ay = 350
+// カメラはネコをおいかける
 scene.cameraFollowSprite(cat)
+// ネコはかべで、はねかえる
 cat.setFlag(SpriteFlag.BounceOnWall, false)
 start_level()
-game.onUpdateInterval(100, function () {
-    x_speed += -20
-    if (controller.B.isPressed()) {
-        x_speed = Math.max(x_speed, 40)
-        if (cat.vy == 0) {
-            charge += 1
-        }
-    } else {
-        x_speed = Math.max(x_speed, 80)
-        charge = 0
-    }
-    controller.moveSprite(cat, x_speed, 0)
-})
 game.onUpdate(function () {
     if (cat.vy > 10) {
         cat.setImage(img`
@@ -1303,4 +1306,17 @@ f f f f f f f f f f f f f f . .
         cat.image.flipX()
     }
     cat.setImage(cat.image)
+})
+game.onUpdateInterval(100, function () {
+    x_speed += -20
+    if (controller.B.isPressed()) {
+        x_speed = Math.max(x_speed, 40)
+        if (cat.vy == 0) {
+            charge += 1
+        }
+    } else {
+        x_speed = Math.max(x_speed, 80)
+        charge = 0
+    }
+    controller.moveSprite(cat, x_speed, 0)
 })
