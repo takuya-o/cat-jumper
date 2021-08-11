@@ -6,13 +6,17 @@ namespace SpriteKind {
     export const Terrain = SpriteKind.create()
     export const spikes = SpriteKind.create()
 }
+// スパイクにあたったら、vy=-100で、とびあがり、ライフがへる
 sprites.onOverlap(SpriteKind.Player, SpriteKind.spikes, function (sprite, otherSprite) {
     cat.vy = -100
     info.changeLifeBy(-1)
 })
+// わなにあたったらダメージ
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Trap, function (sprite, otherSprite) {
     take_damage()
 })
+// コインにあたったら、コインは、とびあがってなくなり
+// スコアが、1ふえる
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Coin, function (sprite, otherSprite) {
     animation.runMovementAnimation(
     otherSprite,
@@ -24,6 +28,8 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Coin, function (sprite, otherSpr
     pause(500)
     otherSprite.destroy()
 })
+// チャージが7より大きかったら、チャージつかって、だいジャンプ x_seed=200 vy=-190
+// それいがいなら、ふつうのジャンプ vy=-150
 function launch () {
     if (7 < charge) {
         charge = 0
@@ -56,11 +62,15 @@ function take_damage () {
         scene.placeOnRandomTile(cat, 3)
     }
 }
+// しろいタイルに下から、あたったらダメージ
 scene.onHitTile(SpriteKind.Player, 0, function (sprite) {
     if (sprite.isHittingTile(CollisionDirection.Bottom)) {
         take_damage()
     }
 })
+// はなとぶつかると、はなは、きえて、
+// がめんのばふんぶん、右で、
+// がめんないでがめんのたかさのはんぶんぶんうえから、はちがでてくる。
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Flower, function (sprite, otherSprite) {
     otherSprite.destroy()
     bee = sprites.create(img`
@@ -184,6 +194,7 @@ function start_level () {
         . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . 
         `, false)
+    // ピンクがいりぐち
     scene.setTile(3, img`
         . . . . . 5 5 5 . . . . . . . . 
         . . . . 5 3 3 5 5 . . . . . . . 
@@ -220,8 +231,11 @@ function start_level () {
         . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . 
         `, false)
+    // ネコはピンク(いりぐち)にいく
     scene.placeOnRandomTile(cat, 3)
     set_biome()
+    // はいれつのなかみをけす
+    // trapわな Coinコイン Flowerはな Terrainトンネル Potalでぐち spikesスパイク
     for (let value of sprites.allOfKind(SpriteKind.Trap)) {
         value.destroy()
     }
@@ -242,6 +256,7 @@ function start_level () {
     }
     if (current_level == 3) {
         pause(100)
+        // Bは、しゃがんでジャンプ
         game.showLongText("\"B\" to crouch and leap", DialogLayout.Bottom)
     } else if (current_level == 0) {
         game.showLongText("Reach the portal", DialogLayout.Bottom)
@@ -265,7 +280,9 @@ function start_level () {
         . . . . 5 3 3 3 5 5 . . . . . . 
         . . . . . 5 5 5 5 . . . . . . . 
         `, SpriteKind.Portal)
+    // あかのタイルが出口
     scene.placeOnRandomTile(exit_portal, 2)
+    // オレンジのタイルはコイン
     for (let value7 of scene.getTilesByType(4)) {
         coin = sprites.create(img`
             . . . . . . . . . . . . . . . . 
@@ -287,6 +304,7 @@ function start_level () {
             `, SpriteKind.Coin)
         value7.place(coin)
         coin.y += -5
+        // まわるコイン
         animation.runImageAnimation(
         coin,
         [img`
@@ -429,6 +447,7 @@ function start_level () {
         100,
         true
         )
+        // 2びょうごとにコインははねる
         animation.runMovementAnimation(
         coin,
         animation.animationPresets(animation.bobbing),
@@ -436,10 +455,12 @@ function start_level () {
         true
         )
     }
+    // きいろタイルは、はな
     for (let value8 of scene.getTilesByType(5)) {
         bee_flower = sprites.create(flower_image, SpriteKind.Flower)
         value8.place(bee_flower)
     }
+    // むらさきのタイルは、ひのたま
     for (let value9 of scene.getTilesByType(10)) {
         fireball = sprites.create(img`
             . . . . . . . . 
@@ -452,6 +473,7 @@ function start_level () {
             . . . . . . . . 
             `, SpriteKind.Trap)
         value9.place(fireball)
+        // うごきまわる、ひのたま
         animation.runMovementAnimation(
         fireball,
         "c 0 -100 0 100 0 0",
@@ -460,6 +482,7 @@ function start_level () {
         )
         fireball.startEffect(effects.fire)
     }
+    // みずいろのタイルは、トンネル
     for (let value10 of scene.getTilesByType(9)) {
         squeeze_grass = sprites.create(img`
             e e e e e e e e e e e e e e e e 
@@ -481,6 +504,7 @@ function start_level () {
             `, SpriteKind.Terrain)
         value10.place(squeeze_grass)
     }
+    // みどりのタイルは、スパイク
     for (let value11 of scene.getTilesByType(6)) {
         spikes2 = sprites.create(img`
             . . . . . . . . . . . . . . . . 
@@ -507,10 +531,13 @@ function start_level () {
 function jump () {
     cat.vy = -150
 }
+// トンネルではゆっくりと、すすませる
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Terrain, function (sprite, otherSprite) {
     x_diff = 0 - sprite.vx / 40
     sprite.x += x_diff
 })
+// biomeへんすうが0なら、つちのタイル
+// それ以外ならば、うみのタイルをよういする。
 function set_biome () {
     if (biome == 0) {
         scene.setTile(12, img`
@@ -978,6 +1005,8 @@ function set_biome () {
             `]
     }
 }
+// てきにぶつかったときに、上からならばスコア+2
+// そうでなければ、ライフ-1  そして、てきはいなくなる
 sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSprite) {
     if (sprite.bottom < otherSprite.bottom) {
         info.changeScoreBy(2)
@@ -989,6 +1018,7 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.Enemy, function (sprite, otherSp
 function go () {
     cat.vx = 80
 }
+// Aボタンがおされたときに、とんでなかったら、ジャンプ
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     if (cat.vy == 0) {
         launch()
@@ -1136,6 +1166,7 @@ scene.cameraFollowSprite(cat)
 cat.setFlag(SpriteFlag.BounceOnWall, false)
 start_level()
 game.onUpdate(function () {
+    // vyにより、とんでいる、おりている、イメージ変える。
     if (cat.vy > 10) {
         cat.setImage(img`
             . . . . . . . . . . . . . . . . 
@@ -1175,6 +1206,7 @@ game.onUpdate(function () {
             . . . . . f . . . . . . . . . . 
             `)
     } else {
+        // あるいていて、Bボタンならチャージたいせいで、チャージがおわったら、しっぽを下げる
         if (controller.B.isPressed()) {
             if (7 < charge) {
                 cat.setImage(img`
@@ -1216,6 +1248,7 @@ game.onUpdate(function () {
                     `)
             }
         } else {
+            // Xいちの、きすうぐうすうで、あるいているイメージをいれかえる
             if (cat.x % 2 == 0) {
                 cat.setImage(img`
                     . . . . . . . . . . . . . . . . 
@@ -1257,9 +1290,11 @@ game.onUpdate(function () {
             }
         }
     }
+    // おちていなければ、かべにつかまる
     if ((cat.isHittingTile(CollisionDirection.Left) || cat.isHittingTile(CollisionDirection.Right)) && cat.vy >= 0) {
         cat.vy = 0
         cat.ay = 0
+        // かべでのチャージのイメージのいれかえ
         if (7 < charge) {
             cat.setImage(img`
                 . . . . . . . . . . . . . . . . 
@@ -1302,15 +1337,21 @@ game.onUpdate(function () {
     } else {
         cat.ay = 350
     }
+    // ひだりむきのときには、いめーじのさゆうをいれかえる
     if (cat.vx < 0 || cat.isHittingTile(CollisionDirection.Left)) {
         cat.image.flipX()
     }
     cat.setImage(cat.image)
 })
+// すすむそくどは、じかんがたちとへる。
+// Bポタンがおされていると、ゆっくり(vx=40いじょう)
+// おされていなと、ふつう(vx=80いじょう)
+// Bボタンを、はなすとチャージは0
 game.onUpdateInterval(100, function () {
     x_speed += -20
     if (controller.B.isPressed()) {
         x_speed = Math.max(x_speed, 40)
+        // とまっているときにBボタンを押しているとチャージ
         if (cat.vy == 0) {
             charge += 1
         }
