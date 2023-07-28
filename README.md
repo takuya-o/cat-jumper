@@ -1,6 +1,6 @@
 # cat-jumper ![Build status badge](https://github.com/takuya-o/cat-jumper/workflows/MakeCode/badge.svg)
 
-
+サンプルにコメント付けてみた
 
 ## Use this extension
 
